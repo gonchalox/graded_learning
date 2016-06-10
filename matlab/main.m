@@ -3,15 +3,15 @@ clear;
 
 %%% PARAMETERS %%
 % Read from CSV file
-exr_dir = '/media/gluzardo/Data/Stuttgart/showgirl_02/';
-tif_dir = '/media/gluzardo/Data/Stuttgart-color-graded/showgirl_02/';
-out_dir = '/media/gluzardo/Data/reg_results/showgirl_02/';
-border=15;
+exr_dir = '/media/gluzardo/Data/Stuttgart/beerfest_lightshow/beerfest_lightshow_04/';
+tif_dir = '/media/gluzardo/Data/Stuttgart-color-graded/beerfest_lightshow/beerfest_lightshow_04/';
+out_dir = '/media/gluzardo/Data/reg_results/beerfest_lightshow/beerfest_lightshow_04/';
+border=11;
 ft=1;
-lt=156; %300
-fj=12;
-test_list=[100];
-smooth=1e-10;
+lt=861;
+fj=1;
+test_list=[1:861];
+smooth=1e-9;
 exp_id='t1';
 %%%%%%%%%%%%%%%%%
 
@@ -26,7 +26,7 @@ tif_files = dir(strcat(tif_dir,'*.tif'));
 mi = 2^16;
 ma = 0; 
 
-disp('Phase 1: Get min and max from EXR files ');
+disp('Get min and max from EXR files..');
 for i=ft:lt %All files to normalize% Add open-exr library 
     im = exrread(strcat(exr_dir,exr_files(i).name));
     mi = min(mi,min(im(:)));
@@ -42,6 +42,7 @@ r_hist = zeros(2^16,2^16);
 g_hist = zeros(2^16,2^16);
 b_hist = zeros(2^16,2^16);
 
+disp('Creating joint histogram...');
 % To store the maximun value of tif image
 ma_tif = 0;
 %Joint Hist Calc
@@ -127,48 +128,48 @@ end
 % save('results_bins','r_bin','g_bin','b_bin');
 
 %Row data curves
-disp('Creating row data dataset...');
-n_data = length(r_hist(r_hist>0));
-xr=zeros(n_data,1);
-yr=zeros(n_data,1);
-xg=zeros(n_data,1);
-yg=zeros(n_data,1);
-xb=zeros(n_data,1);
-yb=zeros(n_data,1);
-
-cont=1;
-%Red channel
-for n=1:2^16
-   for m=1:2^16
-       if(r_hist(m,n)>0)
-           xr(cont)=m-1;
-           yr(cont)=n-1;
-           cont=cont+1;
-       end
-   end 
-end
-%Green channel
-cont=1;
-for n=1:2^16
-   for m=1:2^16
-       if(g_hist(m,n)>0)
-           xg(cont)=m-1;
-           yg(cont)=n-1;
-           cont=cont+1;
-       end
-   end 
-end
-%Blue channel
-cont=1;
-for n=1:2^16
-   for m=1:2^16
-       if(b_hist(m,n)>0)
-           xb(cont)=m-1;
-           yb(cont)=n-1;
-           cont=cont+1;
-       end
-   end 
-end
+% disp('Creating row data dataset...');
+% n_data = length(r_hist(r_hist>0));
+% xr=zeros(n_data,1);
+% yr=zeros(n_data,1);
+% xg=zeros(n_data,1);
+% yg=zeros(n_data,1);
+% xb=zeros(n_data,1);
+% yb=zeros(n_data,1);
+% 
+% cont=1;
+% %Red channel
+% for n=1:2^16
+%    for m=1:2^16
+%        if(r_hist(m,n)>0)
+%            xr(cont)=m-1;
+%            yr(cont)=n-1;
+%            cont=cont+1;
+%        end
+%    end 
+% end
+% %Green channel
+% cont=1;
+% for n=1:2^16
+%    for m=1:2^16
+%        if(g_hist(m,n)>0)
+%            xg(cont)=m-1;
+%            yg(cont)=n-1;
+%            cont=cont+1;
+%        end
+%    end 
+% end
+% %Blue channel
+% cont=1;
+% for n=1:2^16
+%    for m=1:2^16
+%        if(b_hist(m,n)>0)
+%            xb(cont)=m-1;
+%            yb(cont)=n-1;
+%            cont=cont+1;
+%        end
+%    end 
+% end
 
 %Save datasets
 % dataset = [xr yr];
@@ -178,6 +179,12 @@ end
 % dataset = [xb yb];
 % dlmwrite(strcat(out_dir,'datasetb.dat'),dataset,'delimiter',',');
 
+% clear('xr')
+% clear('yr')
+% clear('xg')
+% clear('yg')
+% clear('xb')
+% clear('yb')
 
 %Calcule median datasets  R
 disp('Creating median dataset..');
@@ -186,7 +193,7 @@ median_ry=zeros(1,2^16);
 cont=1;
 for i=1:2^16
     s = find(r_hist(:,i)>0);
-    if(~isempty(s)>0)
+    if(~isempty(s))
         median_ry(cont)=median(s);
         median_rx(cont)=i;
         cont=cont+1;
@@ -201,7 +208,7 @@ median_gy=zeros(1,2^16);
 cont=1;
 for i=1:2^16
     s = find(g_hist(:,i)>0);
-    if(~isempty(s)>0)
+    if(~isempty(s))
         median_gy(cont)=median(s);
         median_gx(cont)=i;
         cont=cont+1;
@@ -216,7 +223,7 @@ median_by=zeros(1,2^16);
 cont=1;
 for i=1:2^16
     s = find(b_hist(:,i)>0);
-    if(~isempty(s)>0)
+    if(~isempty(s))
         median_by(cont)=median(s);
         median_bx(cont)=i;
         cont=cont+1;
@@ -224,6 +231,11 @@ for i=1:2^16
 end
 median_bx = median_bx(1:cont-1);
 median_by = median_by(1:cont-1);
+
+%Clear mem
+% clear('r_hist');
+% clear('g_hist');
+% clear('b_hist');
 
 %Save datasets
 %dataset = [median_rx median_ry];
@@ -233,39 +245,90 @@ median_by = median_by(1:cont-1);
 % dataset = [xb yb];
 % dlmwrite('median_datasetb.dat',dataset,'delimiter',',');
 
-%  Cubic spline fit
 
-disp('Performing cube spline fit...');
-%SMOOTH
+%Remove outliers
+disp('Remove outliers...');
+tol=15000;
+median_ry=[0,median_ry,2^16-1];
+median_rx=[-1,median_rx,2^16-1];
+ind=median_rx;
+for i=2:length(median_ry)
+    if(abs(median_ry(i-1)-median_ry(i))>tol)
+        ind(i)=-1;
+        median_ry(i)=median_ry(i-1);
+    end    
+end
+median_rx=(median_rx(ind>=0));
+median_ry=(median_ry(ind>=0));
+
+median_gy=[0,median_gy,2^16-1];
+median_gx=[-1,median_gx,2^16-1];
+ind=median_gx;
+for i=2:length(median_gy)
+    if(abs(median_gy(i-1)-median_gy(i))>tol)
+        ind(i)=-1;
+        median_gy(i)=median_gy(i-1);
+    end    
+end
+median_gx=(median_gx(ind>=0));
+median_gy=(median_gy(ind>=0));
+
+median_by=[0,median_by,2^16-1];
+median_bx=[-1,median_bx,2^16-1];
+ind=median_bx;
+for i=2:length(median_by)
+    if(abs(median_by(i-1)-median_by(i))>tol)
+        ind(i)=-1;
+        median_by(i)=median_by(i-1);
+    end    
+end
+median_bx=(median_bx(ind>=0));
+median_by=(median_by(ind>=0));
+
+%Remove noise
+disp('Remove noise...');
+window_size=32;
+k=ones(1,window_size)/window_size;
+median_ry = filter(k,1,median_ry);
+median_gy = filter(k,1,median_gy);
+median_by = filter(k,1,median_by);
+
+%Modify curve before fitting
+disp('Adjust curve...');
+median_ry=[-median_ry(end:-1:1), median_ry];
+sp=median_rx-median_rx(1);
+sp = -sp(end:-1:1)+median_rx(1);
+median_rx=[sp,median_rx];
+
+median_gy=[-median_gy(end:-1:1), median_gy];
+sp=median_gx-median_gx(1);
+sp = -sp(end:-1:1)+median_gx(1);
+median_gx=[sp,median_gx];
+
+median_by=[-median_by(end:-1:1), median_by];
+sp=median_bx-median_bx(1);
+sp = -sp(end:-1:1)+median_bx(1);
+median_bx=[sp,median_bx];
+
+% Fitting
+disp('Fitting smooth spline...');
 ppr=csaps(median_rx,median_ry,smooth);
 hr=figure;
-plot(median_rx,median_ry,'ok'); hold on; fnplt(ppr); hold off
+plot(median_rx,median_ry,'ok'); hold on; fnplt(ppr,[0,2^16]); hold off
+axis([0,2^16,0,2^16])
 saveas(hr,strcat(out_dir,strcat(exp_id,'_r.fig')),'fig')
    
 ppg=csaps(median_gx,median_gy,smooth);
 hg=figure;
-plot(median_gx,median_gy,'ok'); hold on; fnplt(ppg); hold off
+plot(median_gx,median_gy,'ok'); hold on; fnplt(ppg,[0,2^16]); hold off
+axis([0,2^16,0,2^16])
 saveas(hg,strcat(out_dir,strcat(exp_id,'_g.fig')),'fig')
 
 ppb=csaps(median_bx,median_by,smooth);
 hb=figure;
-plot(median_bx,median_by,'ok'); hold on; fnplt(ppb); hold off
+plot(median_bx,median_by,'ok'); hold on; fnplt(ppb,[0,2^16]); hold off
+axis([0,2^16,0,2^16])
 saveas(hb,strcat(out_dir,strcat(exp_id,'_b.fig')),'fig')
-
-%%TOLERANCE
-% tol=100000000000;
-% ppr=spaps(median_rx,median_ry,tol);
-% figure;
-% plot(median_rx,median_ry,'ok'); hold on; fnplt(ppr); hold off
-%    
-% ppg=spaps(median_gx,median_gy,tol);
-% figure;
-% plot(median_gx,median_gy,'ok'); hold on; fnplt(ppg); hold off
-% 
-% ppb=spaps(median_bx,median_by,tol);
-% figure;
-% plot(median_bx,median_by,'ok'); hold on; fnplt(ppb); hold off
-
 
 %Creating lookup table
 lu_table=zeros(2^16,4);
@@ -286,25 +349,25 @@ for i=test_list
     exr_data = ((2^16-1)*(exr_data.^gamma)); %Gamma correction
     tif_image_graded_data = uint16(zeros(size(exr_data)));
 
-    disp(strcat('Grading EXR:..',exr_files(i).name));
+    disp(strcat('Grading EXR:..',exr_files(i).name));  
     tif_image_graded_data(border+1:end-border,border+1:end-border,1)=uint16(fnval(ppr,exr_data(border+1:end-border,border+1:end-border,1)));
     tif_image_graded_data(border+1:end-border,border+1:end-border,2)=uint16(fnval(ppg,exr_data(border+1:end-border,border+1:end-border,2)));
     tif_image_graded_data(border+1:end-border,border+1:end-border,3)=uint16(fnval(ppb,exr_data(border+1:end-border,border+1:end-border,3)));
     
     % Save the color gradded
     imwrite(tif_image_graded_data,strcat(strcat(out_dir,'automatic_graded_tif/automatic_graded_'),tif_files(i).name));
-    % Save original ungraded
-    imwrite(uint16(exr_data),strcat(strcat(out_dir,'automatic_graded_tif/ungraded_'),tif_files(i).name));
-    % Save theoriginal graded
+    
+    %Save the original graded
     tif_image=imread(strcat(tif_dir,tif_files(i).name));
     imwrite(tif_image,strcat(strcat(out_dir,'automatic_graded_tif/graded_'),tif_files(i).name));
     
-    %Convert to EXR format and save
-    exr_image_graded=((single(tif_image_graded_data)/2^16).^1/gamma)*mami+mi;
-    % Save the color graded
-    exrwrite(exr_image_graded,strcat(strcat(out_dir,'automatic_graded_exr/automatic_graded_'),exr_files(i).name)); 
-    % Save original ungraded
-    exrwrite(exr_image,strcat(strcat(out_dir,'automatic_graded_exr/ungraded_'),exr_files(i).name)); 
+    %Save original ungraded
+%     imwrite(uint16(exr_data),strcat(strcat(out_dir,'automatic_graded_tif/ungraded_'),tif_files(i).name));
+    %Convert to EXR format and save%     exr_image_graded=((single(tif_image_graded_data)/(2^16-1)))*mami+mi;
+%     % Save the color graded
+%     exrwrite(exr_image_graded,strcat(strcat(out_dir,'automatic_graded_exr/automatic_graded_'),exr_files(i).name)); 
+%     % Save original ungraded
+%     exrwrite(exr_image,strcat(strcat(out_dir,'automatic_graded_exr/ungraded_'),exr_files(i).name)); 
 end
 
 
