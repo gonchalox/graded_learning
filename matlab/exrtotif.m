@@ -1,16 +1,23 @@
-% Clear cariables
+% Learn how to get a color graded version from EXR files (tonemapping)
+% For each channel
+% 1. Create joint histogram (X:EXR, y:TIF)
+% 2. Get transformation curve
+% 3. Remove outliers and noise
+% 4. Fiting to smooth b-spline
+
+% Clear variables
 clear;
 
 %%% PARAMETERS %%
 % Read from CSV file
-exr_dir = '/media/gluzardo/Data/Stuttgart/beerfest_lightshow/beerfest_lightshow_04/';
-tif_dir = '/media/gluzardo/Data/Stuttgart-color-graded/beerfest_lightshow/beerfest_lightshow_04/';
-out_dir = '/media/gluzardo/Data/reg_results/beerfest_lightshow/beerfest_lightshow_04/';
+exr_dir = '/media/gluzardo/Data/Stuttgart/smith_hammering/';
+tif_dir = '/media/gluzardo/Data/Stuttgart-color-graded/smith_hammering/';
+out_dir = '/media/gluzardo/Data/reg_results/smith_hammering/';
 border=11;
 ft=1;
-lt=861;
-fj=1;
-test_list=[1:861];
+lt=467;
+fj=12;
+test_list=[1:467];
 smooth=1e-9;
 exp_id='t1';
 %%%%%%%%%%%%%%%%%
@@ -18,12 +25,11 @@ exp_id='t1';
 % Add open-exr library 
 addpath('/u/gluzardo/Documents/phd/openexr-matlab-master');
 
-
 exr_files = dir(strcat(exr_dir,'*.exr'));
 tif_files = dir(strcat(tif_dir,'*.tif'));      
 
 % Compute minimum and maximum over the whole EXR secuence
-mi = 2^16;
+mi = 2^16-1;
 ma = 0; 
 
 disp('Get min and max from EXR files..');
@@ -48,8 +54,8 @@ ma_tif = 0;
 %Joint Hist Calc
 gamma=1/2.2;
 for i=ft:fj:lt
-      disp(strcat(strcat('Phase 2: Loading EXR:.. ',exr_files(i).name(1:end-4))));
-      disp(strcat(strcat('Phase 2: Loading TIF:..',tif_files(i).name(1:end-4))));
+      disp(strcat(strcat('Loading EXR:.. ',exr_files(i).name(1:end-4))));
+      disp(strcat(strcat('Loading TIF:..',tif_files(i).name(1:end-4))));
       exr_image = exrread(strcat(exr_dir,exr_files(i).name));
       tif_image = imread(strcat(tif_dir,tif_files(i).name));
       
@@ -77,50 +83,53 @@ for i=ft:fj:lt
       end  
 end
 
-% % Bins for visualization only
-% 
-% disp('Creating joint histogram for visualization...');
-% bin_size = 16;
-% r_bin = zeros((max_val+1)/bin_size,(max_val+1)/bin_size);
-% g_bin = zeros((max_val+1)/bin_size,(max_val+1)/bin_size);
-% b_bin = zeros((max_val+1)/bin_size,(max_val+1)/bin_size);
-% 
-% for m=1:(max_val+1)/bin_size-1
-%     for n=1:max_val/bin_size
-%         reg = r_hist((m-1)*bin_size+1:m*bin_size,(n-1)*bin_size+1:n*bin_size);
-%         geg = g_hist((m-1)*bin_size+1:m*bin_size,(n-1)*bin_size+1:n*bin_size);
-%         beg = b_hist((m-1)*bin_size+1:m*bin_size,(n-1)*bin_size+1:n*bin_size);
-%         
-%         r_bin(m,n)=sum(sum(reg)); 
-%         g_bin(m,n)=sum(sum(geg)); 
-%         b_bin(m,n)=sum(sum(beg)); 
-%     end
-% end
-% 
-% figure;
-% image(r_bin);axis([0 max_val/bin_size 0 floor(ma_tif/bin_size)]);
-% ax=gca;
-% xlabel('EXR','fontsize',10);
-% ylabel('Gradded TIF','fontsize',10);
-% title('Red channel','fontsize',10);
-% set(gca,'XTick',[]);
-% set(gca,'YTick',[]);
-% 
-% figure;
-% image(g_bin);axis([0 max_val/bin_size 0 floor(ma_tif/bin_size)]);
-% xlabel('EXR','fontsize',10);
-% ylabel('Gradded TIF','fontsize',10);
-% title('Green channel','fontsize',10);
-% set(gca,'XTick',[]);
-% set(gca,'YTick',[]);
-% 
-% figure;
-% image(b_bin);axis([0 max_val/bin_size 0 floor(ma_tif/bin_size)]);
-% xlabel('EXR','fontsize',10);
-% ylabel('Gradded TIF','fontsize',10);
-% title('Blue channel','fontsize',10);
-% set(gca,'XTick',[]);
-% set(gca,'YTick',[]);
+% Bins for visualization only
+
+disp('Creating joint histogram for visualization...');
+bin_size = 16;
+r_bin = zeros((max_val+1)/bin_size,(max_val+1)/bin_size);
+g_bin = zeros((max_val+1)/bin_size,(max_val+1)/bin_size);
+b_bin = zeros((max_val+1)/bin_size,(max_val+1)/bin_size);
+
+for m=1:(max_val+1)/bin_size-1
+    for n=1:max_val/bin_size
+        reg = r_hist((m-1)*bin_size+1:m*bin_size,(n-1)*bin_size+1:n*bin_size);
+        geg = g_hist((m-1)*bin_size+1:m*bin_size,(n-1)*bin_size+1:n*bin_size);
+        beg = b_hist((m-1)*bin_size+1:m*bin_size,(n-1)*bin_size+1:n*bin_size);
+        
+        r_bin(m,n)=sum(sum(reg)); 
+        g_bin(m,n)=sum(sum(geg)); 
+        b_bin(m,n)=sum(sum(beg)); 
+    end
+end
+
+hr=figure;
+image(r_bin);axis([0 max_val/bin_size 0 floor(ma_tif/bin_size)]);
+ax=gca;
+xlabel('EXR','fontsize',10);
+ylabel('Gradded TIF','fontsize',10);
+title('Red channel','fontsize',10);
+set(gca,'XTick',[]);
+set(gca,'YTick',[]);
+saveas(hr,strcat(out_dir,strcat(exp_id,'_r_joint_hist.fig')),'fig')
+
+hg=figure;
+image(g_bin);axis([0 max_val/bin_size 0 floor(ma_tif/bin_size)]);
+xlabel('EXR','fontsize',10);
+ylabel('Gradded TIF','fontsize',10);
+title('Green channel','fontsize',10);
+set(gca,'XTick',[]);
+set(gca,'YTick',[]);
+saveas(hg,strcat(out_dir,strcat(exp_id,'_g_joint_hist.fig')),'fig')
+
+hb=figure;
+image(b_bin);axis([0 max_val/bin_size 0 floor(ma_tif/bin_size)]);
+xlabel('EXR','fontsize',10);
+ylabel('Gradded TIF','fontsize',10);
+title('Blue channel','fontsize',10);
+set(gca,'XTick',[]);
+set(gca,'YTick',[]);
+saveas(hb,strcat(out_dir,strcat(exp_id,'_b_joint_hist.fig')),'fig')
 
 %Save files
 %disp('Save results to file...');
@@ -358,8 +367,8 @@ for i=test_list
     imwrite(tif_image_graded_data,strcat(strcat(out_dir,'automatic_graded_tif/automatic_graded_'),tif_files(i).name));
     
     %Save the original graded
-    tif_image=imread(strcat(tif_dir,tif_files(i).name));
-    imwrite(tif_image,strcat(strcat(out_dir,'automatic_graded_tif/graded_'),tif_files(i).name));
+%     tif_image=imread(strcat(tif_dir,tif_files(i).name));
+%     imwrite(tif_image,strcat(strcat(out_dir,'automatic_graded_tif/graded_'),tif_files(i).name));
     
     %Save original ungraded
 %     imwrite(uint16(exr_data),strcat(strcat(out_dir,'automatic_graded_tif/ungraded_'),tif_files(i).name));
@@ -369,7 +378,5 @@ for i=test_list
 %     % Save original ungraded
 %     exrwrite(exr_image,strcat(strcat(out_dir,'automatic_graded_exr/ungraded_'),exr_files(i).name)); 
 end
-
-
 
 
