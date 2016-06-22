@@ -1,5 +1,6 @@
 %% This Script demonstrates how to correctly load the HDR-Images from the HdM-HDR-2014 data set.
-
+% Add open-exr library 
+addpath('/u/gluzardo/Documents/phd/openexr-matlab-master');
 %% Init 
 % Adjust this Path to the Path where you downloaded the HdM-HDR-2014 data set
 ImgPath = '/media/gluzardo/Data/Stuttgart/'; 
@@ -30,19 +31,20 @@ sRGBDeLinearize = @(x)((x>0.0031308).*(1.055.*x.^(1/2.4)-0.055)+(x<=0.0031308).*
 
 %% Load a Frame:
 % Select an Image from the last sequence
-ImgSequence = 20;
+ImgSequence = 23;
 % Select Frame 556 from the range of 413-1514
-fcc = 599;     
+fcc = 800;     
 
 % Read OpenEXR-File with exrread for MATLAB, downloaded from: http://www.mit.edu/~kimo/software/matlabexr/
 Img = exrread([ImgPath,cell2mat(ImgName(ImgSequence)),'/',cell2mat(ImgName(ImgSequence)),'_',...
     num2str(fcc,'%06d'),'.exr']);
 
 %% Display - Play around with exposure values between -10 and 5:
-Exposure = -10;
+Exposure = 0;
 
 linearsRGBImg = reshape(reshape((Img.*2^Exposure),[],3)*AlexaWideGamut2sRGB,1080,1920,3);
-imshow(sRGBDeLinearize(linearsRGBImg));
+d=sRGBDeLinearize(linearsRGBImg);
+imshow(d);
 
 %% Gratulation, you have sucessfully loaded the HdM-HDR-2014 footage. 
 % Good luck finding new Algorithms in HDR-processing and display. 
